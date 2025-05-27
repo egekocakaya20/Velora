@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Velora</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter&display=swap');
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0; padding: 0;
+    font-family: 'Inter', sans-serif;
+    background: #0a0f1a;
+    color: #ddd;
+    overflow: hidden;
+    user-select: none;
+  }
+  #mouse-trail {
+    position: fixed;
+    pointer-events: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #0ff, #00f);
+    box-shadow:
+      0 0 15px rgb(195, 110, 221),
+      0 0 30px #0ff,
+      0 0 45px #00f,
+      0 0 60px rgb(0, 153, 255);
+    mix-blend-mode: screen;
+    transform: translate(-50%, -50%);
+    transition: background 1.5s ease;
+    z-index: 9999;
+  }
+
+  /* Smooth animation container */
+  #app {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+  }
+  #sidebar {
+    width: 280px;
+    background: linear-gradient(135deg, #101820, #0d1a2a);
+    box-shadow: inset 2px 0 6px #06f9ffaa;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+  }
+  #sidebar h2 {
+    margin: 0 0 10px 0;
+    font-weight: 700;
+    color: #06f9ff;
+    letter-spacing: 1.2px;
+    text-shadow: 0 0 6px #06f9ff;
+  }
+  #friend-request {
+    margin-bottom: 15px;
+  }
+  #friend-request input {
+    width: calc(100% - 90px);
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: none;
+    background: #122232;
+    color: #aaffff;
+    font-weight: 600;
+    font-size: 14px;
+    transition: box-shadow 0.3s ease;
+  }
+  #friend-request input:focus {
+    outline: none;
+    box-shadow: 0 0 10px #06f9ff;
+  }
+  #friend-request button {
+    width: 70px;
+    margin-left: 10px;
+    padding: 8px 0;
+    background: #06f9ff;
+    border: none;
+    border-radius: 10px;
+    color: #001f33;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 0 6px #06f9ff;
+    transition: background 0.4s ease;
+  }
+  #friend-request button:hover {
+    background: #0af;
+  }
+  #friends-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: #06f9ff44 transparent;
+  }
+  #friends-list::-webkit-scrollbar {
+    width: 8px;
+  }
+  #friends-list::-webkit-scrollbar-thumb {
+    background: #06f9ff77;
+    border-radius: 10px;
+  }
+  .friend {
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    background: #051622;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #66d9ff;
+    box-shadow: 0 0 4px #06f9ff88;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+    user-select: none;
+  }
+  .friend:hover {
+    background: #0a2a48;
+    box-shadow: 0 0 15px #06f9ffcc;
+  }
+  .friend.request {
+    background: #0a3f24;
+    font-weight: 700;
+    color: #aaffaa;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .friend.request button {
+    background: #0f9a0f;
+    color: white;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 5px 12px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 0 8px #0f9a0fbb;
+    transition: background 0.3s ease;
+  }
+  .friend.request button:hover {
+    background: #07f007;
+  }
+
+  #chat-section {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    background: #0f1c33;
+    box-shadow: inset 0 0 20px #0666ffaa;
+  }
+  #chat-header {
+    padding: 18px 25px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #0ff;
+    text-shadow: 0 0 8px #0ff;
+    border-bottom: 1px solid #0a4b9b;
+    user-select: none;
+  }
+  #messages {
+    flex-grow: 1;
+    padding: 15px 25px;
+    overflow-y: auto;
+    color: #bbf7ff;
+    font-weight: 600;
+    text-shadow: 0 0 4px #06f9ffbb;
+    scrollbar-width: thin;
+    scrollbar-color: #06f9ff66 transparent;
+  }
+  #messages::-webkit-scrollbar {
+    width: 8px;
+  }
+  #messages::-webkit-scrollbar-thumb {
+    background: #06f9ffaa;
+    border-radius: 10px;
+  }
+  .message {
+    margin-bottom: 10px;
+    background: rgba(0, 255, 255, 0.07);
+    padding: 10px 15px;
+    border-radius: 12px;
+    max-width: 80%;
+    box-shadow: 0 0 12px #06f9ff88;
+    word-wrap: break-word;
+    line-height: 1.3;
+    transition: background 0.4s ease;
+  }
+  .message strong {
+    color: #00ffffcc;
+    text-shadow: 0 0 8px #00ffffaa;
+  }
+
+  #input-container {
+    display: flex;
+    padding: 15px 25px;
+    background: #051422;
+    border-top: 1px solid #06f9ff66;
+  }
+  #message-input {
+    flex-grow: 1;
+    border-radius: 12px;
+    border: none;
+    background: #0a274a;
+    padding: 14px 18px;
+    font-size: 16px;
+    color: #aaffff;
+    box-shadow: inset 0 0 10px #06f9ff88;
+    transition: box-shadow 0.3s ease;
+  }
+  #message-input:focus {
+    outline: none;
+    box-shadow: 0 0 20px #06f9ffcc;
+  }
+  #send-btn {
+    margin-left: 15px;
+    padding: 14px 24px;
+    background: #06f9ff;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    color: #001f33;
+    cursor: pointer;
+    box-shadow: 0 0 12px #06f9ffcc;
+    transition: background 0.4s ease;
+  }
+  #send-btn:hover {
+    background: #00bfff;
+  }
+
+  /* Auth Overlay */
+  #auth-overlay {
+    position: fixed;
+    top:0; left:0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+  }
+  #auth-box {
+    background: #011d36;
+    padding: 30px 40px;
+    border-radius: 16px;
+    box-shadow: 0 0 40px #0a94ffcc;
+    width: 320px;
+    text-align: center;
+  }
+  #auth-box h2 {
+    color: #06f9ff;
+    margin-bottom: 25px;
+    text-shadow: 0 0 10px #06f9ffaa;
+  }
+  #auth-box input {
+    width: 100%;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    border: none;
+    font-size: 15px;
+    font-weight: 600;
+    background: #062e59;
+    color: #aaffff;
+    box-shadow: inset 0 0 12px #06f9ffbb;
+    transition: box-shadow 0.3s ease;
+  }
+  #auth-box input:focus {
+    outline: none;
+    box-shadow: 0 0 22px #06f9ffcc;
+  }
+  #auth-submit {
+    background: #06f9ff;
+    color: #001f33;
+    font-weight: 700;
+    font-size: 16px;
+    border: none;
+    padding: 12px 0;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 0 15px #06f9ffcc;
+    width: 100%;
+    margin-bottom: 12px;
+    transition: background 0.3s ease;
+  }
+  #auth-submit:hover {
+    background: #00bfff;
+  }
+  #auth-toggle {
+    color: #00d2ff;
+    cursor: pointer;
+    user-select: none;
+    font-weight: 600;
+    transition: color 0.3s ease;
+  }
+  #auth-toggle:hover {
+    color: #06f9ff;
+  }
+  #auth-error {
+    margin-top: 10px;
+    color: #f66;
+    font-weight: 700;
+    min-height: 18px;
+  }
+
+</style>
+</head>
+<body>
+  <div id="mouse-trail"></div>
+
+  <div id="app">
+    <div id="sidebar">
+      <h2>Velora Chat</h2>
+      <div id="friend-request" style="display:none;">
+        <input type="text" id="friend-username" placeholder="Add friend username" autocomplete="off" />
+        <button id="add-friend-btn">Add Friend</button>
+      </div>
+      <div id="friends-list"></div>
+    </div>
+
+    <div id="chat-section">
+      <div id="chat-header">Public Chat</div>
+      <div id="messages"></div>
+      <div id="input-container">
+        <input id="message-input" placeholder="Type a message..." autocomplete="off" />
+        <button id="send-btn">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="auth-overlay">
+    <div id="auth-box">
+      <h2 id="auth-title">Login</h2>
+      <input type="text" id="auth-username" placeholder="Username" autocomplete="off" />
+      <input type="password" id="auth-password" placeholder="Password" autocomplete="off" />
+      <button id="auth-submit">Login</button>
+      <div id="auth-toggle">Don't have an account? Register</div>
+      <div id="auth-error"></div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // SMOOTH mouse trail with easing & color cycling
+  const trail = document.getElementById('mouse-trail');
+  let mouseX = window.innerWidth / 2;
+  let mouseY = window.innerHeight / 2;
+  let trailX = mouseX;
+  let trailY = mouseY;
+
+  // Color cycling (hue shift)
+  let hue = 180;
+  function updateTrailColor() {
+    hue += 0.7;
+    if (hue > 360) hue -= 360;
+    const color1 = `hsl(${hue}, 90%, 60%)`;
+    const color2 = `hsl(${(hue+60)%360}, 80%, 50%)`;
+    trail.style.background = `radial-gradient(circle, ${color1}, ${color2})`;
+    trail.style.boxShadow = `
+      0 0 15px ${color1},
+      0 0 30px ${color1},
+      0 0 45px ${color2},
+      0 0 60px ${color2}
+    `;
+  }
+
+  document.addEventListener('mousemove', e => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+  });
+
+  function animate() {
+    // Smooth easing movement towards the mouse
+    trailX += (mouseX - trailX) * 0.15;
+    trailY += (mouseY - trailY) * 0.15;
+    trail.style.transform = `translate(${trailX}px, ${trailY}px) translate(-50%, -50%)`;
+
+    updateTrailColor();
+
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  // --------- AUTH + CHAT LOGIC ----------
+
+  const authOverlay = document.getElementById('auth-overlay');
+  const authTitle = document.getElementById('auth-title');
+  const authUsername = document.getElementById('auth-username');
+  const authPassword = document.getElementById('auth-password');
+  const authSubmit = document.getElementById('auth-submit');
+  const authToggle = document.getElementById('auth-toggle');
+  const authError = document.getElementById('auth-error');
+
+  let isLogin = true;
+  let currentUser = null;
+
+  // Simple user storage in localStorage (for demo)
+  const users = JSON.parse(localStorage.getItem('veloraUsers') || '{}');
+  const friends = JSON.parse(localStorage.getItem('veloraFriends') || '{}');
+
+  function saveUsers() {
+    localStorage.setItem('veloraUsers', JSON.stringify(users));
+  }
+  function saveFriends() {
+    localStorage.setItem('veloraFriends', JSON.stringify(friends));
+  }
+
+  authToggle.onclick = () => {
+    isLogin = !isLogin;
+    authTitle.textContent = isLogin ? 'Login' : 'Register';
+    authSubmit.textContent = isLogin ? 'Login' : 'Register';
+    authToggle.textContent = isLogin ? "Don't have an account? Register" : 'Already have an account? Login';
+    authError.textContent = 'Discord Support : theshape.0';
+    authUsername.value = '';
+    authPassword.value = '';
+  };
+
+  authSubmit.onclick = () => {
+    const username = authUsername.value.trim();
+    const password = authPassword.value.trim();
+
+    if (!username || !password) {
+      authError.textContent = 'Please fill in both fields.';
+      return;
+    }
+    if (isLogin) {
+      if (!users[username] || users[username].password !== password) {
+        authError.textContent = 'Invalid username or password.';
+        return;
+      }
+      currentUser = username;
+      onLoggedIn();
+    } else {
+      if (users[username]) {
+        authError.textContent = 'Username already exists.';
+        return;
+      }
+      users[username] = { password };
+      saveUsers();
+      authError.style.color = 'lightgreen';
+      authError.textContent = 'Registration successful! You can login now.';
+      setTimeout(() => {
+        isLogin = true;
+        authTitle.textContent = 'Login';
+        authSubmit.textContent = 'Login';
+        authToggle.textContent = "Don't have an account? Register";
+        authError.textContent = '';
+        authError.style.color = '#f66';
+      }, 2000);
+    }
+  };
+
+  // CHAT UI
+  const chatHeader = document.getElementById('chat-header');
+  const messagesEl = document.getElementById('messages');
+  const messageInput = document.getElementById('message-input');
+  const sendBtn = document.getElementById('send-btn');
+  const friendRequestDiv = document.getElementById('friend-request');
+  const friendUsernameInput = document.getElementById('friend-username');
+  const addFriendBtn = document.getElementById('add-friend-btn');
+  const friendsListDiv = document.getElementById('friends-list');
+
+  let activeChat = 'public'; // public or friend's username
+  let chatHistory = {
+    public: []
+  };
+
+  function renderMessages() {
+    messagesEl.innerHTML = '';
+    let msgs = chatHistory[activeChat] || [];
+    msgs.forEach(({ sender, text }) => {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'message';
+      msgDiv.innerHTML = `<strong>${sender}:</strong> ${text}`;
+      messagesEl.appendChild(msgDiv);
+    });
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function addMessage(chat, sender, text) {
+    if (!chatHistory[chat]) chatHistory[chat] = [];
+    chatHistory[chat].push({ sender, text });
+    if (chat === activeChat) renderMessages();
+  }
+
+  function renderFriends() {
+    friendsListDiv.innerHTML = '';
+
+    if (!friends[currentUser]) friends[currentUser] = [];
+
+    friends[currentUser].forEach(f => {
+      const friendDiv = document.createElement('div');
+      friendDiv.className = 'friend';
+      friendDiv.textContent = f;
+      friendDiv.onclick = () => {
+        activeChat = f;
+        chatHeader.textContent = `Chat with ${f}`;
+        friendRequestDiv.style.display = 'none';
+        renderMessages();
+      };
+      friendsListDiv.appendChild(friendDiv);
+    });
+
+    // Add button to switch back to public chat
+    const publicDiv = document.createElement('div');
+    publicDiv.className = 'friend';
+    publicDiv.style.background = '#063f7c';
+    publicDiv.textContent = 'Public Chat';
+    publicDiv.onclick = () => {
+      activeChat = 'public';
+      chatHeader.textContent = 'Public Chat';
+      friendRequestDiv.style.display = 'block';
+      renderMessages();
+    };
+    friendsListDiv.prepend(publicDiv);
+  }
+
+  addFriendBtn.onclick = () => {
+    const friendName = friendUsernameInput.value.trim();
+    if (!friendName) return alert('Enter a username!');
+    if (friendName === currentUser) return alert("You can't add yourself!");
+    if (!users[friendName]) return alert('User does not exist!');
+    if (friends[currentUser]?.includes(friendName)) return alert('Already friends!');
+
+    friends[currentUser] = friends[currentUser] || [];
+    friends[currentUser].push(friendName);
+    saveFriends();
+    friendUsernameInput.value = '';
+    alert(`Friend ${friendName} added!`);
+    renderFriends();
+  };
+
+  sendBtn.onclick = () => {
+    const msg = messageInput.value.trim();
+    if (!msg) return;
+    addMessage(activeChat, currentUser, msg);
+    messageInput.value = '';
+  };
+
+  messageInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendBtn.click();
+  });
+
+  function onLoggedIn() {
+    authOverlay.style.display = 'none';
+    friendRequestDiv.style.display = 'block';
+    renderFriends();
+    renderMessages();
+  }
+})();
+</script>
+</body>
+</html>
